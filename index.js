@@ -161,4 +161,4 @@ client.on('interactionCreate', async interaction => {
         }
     }
 });
-client.login("tokenbot");
+clientclient.login(process.env.TOKEN);
