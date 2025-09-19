@@ -1,13 +1,30 @@
-const { Client, GatewayIntentBits, Partials, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle, PermissionsBitField } = require('discord.js');
+const {
+    Client,
+    GatewayIntentBits,
+    Partials,
+    EmbedBuilder,
+    ActionRowBuilder,
+    ButtonBuilder,
+    ButtonStyle,
+    ModalBuilder,
+    TextInputBuilder,
+    TextInputStyle,
+    PermissionsBitField
+} = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 
+// إنشاء عميل
 const client = new Client({
     intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent],
     partials: [Partials.Message, Partials.Channel],
 });
 
-const wordsFile = path.join(__dirname, 'data', 'words.json');
+// ملف الكلمات
+const dataDir = path.join(__dirname, 'data');
+if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir);
+
+const wordsFile = path.join(dataDir, 'words.json');
 if (!fs.existsSync(wordsFile)) fs.writeFileSync(wordsFile, JSON.stringify([]));
 
 function loadWords() {
@@ -22,10 +39,11 @@ function encrypt(text) {
     return Buffer.from(text).toString('base64');
 }
 
+// أوامر الرسائل
 client.on('messageCreate', async message => {
     if (message.author.bot) return;
 
-    // أمر +كلمات - فقط للمسؤولين
+    // أمر +كلمات
     if (message.content === '+كلمات') {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) return;
 
@@ -48,8 +66,8 @@ client.on('messageCreate', async message => {
         await message.delete();
 
         const embed = new EmbedBuilder()
-            .setTitle('تشفير')
-            .setDescription('اضغط على زر وشفر:')
+            .setTitle('🔒 التشفير')
+            .setDescription('اختر زر للتشفير أو لعرض الكلمات:')
             .setColor('DarkButNotBlack')
             .setThumbnail(message.guild.iconURL())
             .setFooter({ text: message.guild.name, iconURL: message.guild.iconURL() });
@@ -69,6 +87,7 @@ client.on('messageCreate', async message => {
     }
 });
 
+// تفاعلات الأزرار والمودالات
 client.on('interactionCreate', async interaction => {
     if (interaction.isButton()) {
         const id = interaction.customId;
@@ -100,7 +119,7 @@ client.on('interactionCreate', async interaction => {
         if (id === 'show_words' || id === 'show_words_hidden') {
             const list = words.map(w => `**${w.word}** → \`${w.enc}\``).join('\n') || 'لا توجد كلمات محفوظة بعد.';
             const embed = new EmbedBuilder()
-                .setTitle('الكلمات المشفرة')
+                .setTitle('📋 الكلمات المشفرة')
                 .setDescription(list)
                 .setColor('DarkButNotBlack')
                 .setThumbnail(interaction.guild.iconURL())
@@ -137,7 +156,7 @@ client.on('interactionCreate', async interaction => {
             words.push({ word, enc });
             saveWords(words);
 
-            return interaction.reply({ content: `تمت إضافة الكلمة: **${word}** بتشفير: \`${enc}\``, ephemeral: true });
+            return interaction.reply({ content: `✅ تمت إضافة الكلمة: **${word}** بتشفير: \`${enc}\``, ephemeral: true });
         }
 
         if (id === 'modal_encrypt') {
@@ -155,10 +174,12 @@ client.on('interactionCreate', async interaction => {
             const result = found ? replaced : encrypt(input);
 
             return interaction.reply({
-                content: `**بعد التشفير:**\n\`\`\`${result}\`\`\``,
+                content: `🔑 **بعد التشفير:**\n\`\`\`${result}\`\`\``,
                 ephemeral: true,
             });
         }
     }
 });
-clientclient.login(process.env.TOKEN);
+
+// تسجيل الدخول
+client.login(process.env.TOKEN);
